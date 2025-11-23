@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 import tempfile
 import json
+import copy
 from typing import Dict, Any, Optional
 import io
 
@@ -409,8 +410,18 @@ def render_validation_section():
                 if prior_re == 0:
                     prior_re = st.session_state.prior_year_data.get('retained_earnings', 0)
                 
+                # Create a copy of BS data with updated retained earnings for validation
+                bs_data_for_validation = copy.deepcopy(st.session_state.bs_data)
+                bs_data_for_validation['equity']['retained_earnings'] = prior_re + st.session_state.pl_data.get('net_profit_loss', 0)
+                bs_data_for_validation['total_equity'] = sum(bs_data_for_validation['equity'].values())
+                bs_data_for_validation['total_liabilities_and_equity'] = bs_data_for_validation['total_liabilities'] + bs_data_for_validation['total_equity']
+                # Recalculate assets totals
+                bs_data_for_validation['total_current_assets'] = sum(bs_data_for_validation['current_assets'].values())
+                bs_data_for_validation['total_non_current_assets'] = sum(bs_data_for_validation['non_current_assets'].values())
+                bs_data_for_validation['total_assets'] = bs_data_for_validation['total_current_assets'] + bs_data_for_validation['total_non_current_assets']
+                
                 is_valid, errors, warnings, queries = validator.validate_all(
-                    bs_data=st.session_state.bs_data,
+                    bs_data=bs_data_for_validation,
                     pl_data=st.session_state.pl_data,
                     prior_year_data=st.session_state.prior_year_data,
                     prior_re=prior_re,
@@ -472,12 +483,25 @@ def render_preview_and_generate():
                     if prior_re == 0:
                         prior_re = st.session_state.prior_year_data.get('retained_earnings', 0)
                     
+                    # Update retained earnings - deep copy to avoid modifying original
+                    bs_data_copy = copy.deepcopy(st.session_state.bs_data)
+                    
                     # Update retained earnings
-                    bs_data_copy = st.session_state.bs_data.copy()
-                    bs_data_copy['equity'] = bs_data_copy.get('equity', {}).copy()
                     bs_data_copy['equity']['retained_earnings'] = prior_re + st.session_state.pl_data.get('net_profit_loss', 0)
+                    
+                    # Recalculate all totals to ensure balance
                     bs_data_copy['total_equity'] = sum(bs_data_copy['equity'].values())
                     bs_data_copy['total_liabilities_and_equity'] = bs_data_copy['total_liabilities'] + bs_data_copy['total_equity']
+                    
+                    # Recalculate total_assets from components to ensure accuracy
+                    bs_data_copy['total_current_assets'] = sum(bs_data_copy['current_assets'].values())
+                    bs_data_copy['total_non_current_assets'] = sum(bs_data_copy['non_current_assets'].values())
+                    bs_data_copy['total_assets'] = bs_data_copy['total_current_assets'] + bs_data_copy['total_non_current_assets']
+                    
+                    # Validate balance - if it doesn't balance, it's a data issue
+                    if abs(bs_data_copy['total_assets'] - bs_data_copy['total_liabilities_and_equity']) > 1:
+                        difference = bs_data_copy['total_assets'] - bs_data_copy['total_liabilities_and_equity']
+                        st.warning(f"⚠️ Balance sheet imbalance: ${difference:,.2f}. Please check Excel data.")
                     
                     # Generate preview
                     generator = AASBFinancialStatementGenerator(
@@ -551,12 +575,25 @@ def render_preview_and_generate():
                     if prior_re == 0:
                         prior_re = st.session_state.prior_year_data.get('retained_earnings', 0)
                     
+                    # Update retained earnings - deep copy to avoid modifying original
+                    bs_data_copy = copy.deepcopy(st.session_state.bs_data)
+                    
                     # Update retained earnings
-                    bs_data_copy = st.session_state.bs_data.copy()
-                    bs_data_copy['equity'] = bs_data_copy.get('equity', {}).copy()
                     bs_data_copy['equity']['retained_earnings'] = prior_re + st.session_state.pl_data.get('net_profit_loss', 0)
+                    
+                    # Recalculate all totals to ensure balance
                     bs_data_copy['total_equity'] = sum(bs_data_copy['equity'].values())
                     bs_data_copy['total_liabilities_and_equity'] = bs_data_copy['total_liabilities'] + bs_data_copy['total_equity']
+                    
+                    # Recalculate total_assets from components to ensure accuracy
+                    bs_data_copy['total_current_assets'] = sum(bs_data_copy['current_assets'].values())
+                    bs_data_copy['total_non_current_assets'] = sum(bs_data_copy['non_current_assets'].values())
+                    bs_data_copy['total_assets'] = bs_data_copy['total_current_assets'] + bs_data_copy['total_non_current_assets']
+                    
+                    # Validate balance - if it doesn't balance, it's a data issue
+                    if abs(bs_data_copy['total_assets'] - bs_data_copy['total_liabilities_and_equity']) > 1:
+                        difference = bs_data_copy['total_assets'] - bs_data_copy['total_liabilities_and_equity']
+                        st.warning(f"⚠️ Balance sheet imbalance: ${difference:,.2f}. Please check Excel data.")
                     
                     # Generate PDF
                     generator = AASBFinancialStatementGenerator(
