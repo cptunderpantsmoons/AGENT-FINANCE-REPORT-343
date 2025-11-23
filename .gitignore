@@ -37,9 +37,9 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Generated PDFs
+# Generated PDFs (keep samples)
 *.pdf
-!sample*.pdf
+!data/samples/*.pdf
 
 # Temporary files
 *.tmp
@@ -63,7 +63,7 @@ secrets.txt
 .railway/
 
 # Streamlit
-.streamlit/secrets.toml
+config/.streamlit/secrets.toml
 
 # Logs
 *.log
@@ -74,3 +74,7 @@ secrets.txt
 *credential*
 *password*
 
+# Data files (keep samples)
+data/*.xlsx
+data/*.pdf
+!data/samples/*

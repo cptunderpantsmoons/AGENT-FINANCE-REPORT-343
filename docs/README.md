@@ -23,19 +23,6 @@ This tool generates AASB-compliant financial statements for Australian non-repor
 - Includes comparative figures from prior year
 - Validates key financial relationships (Assets = Liabilities + Equity)
 
-## Repository Structure
-
-```
-├── src/              # Source code (Python modules)
-├── docs/             # Documentation
-├── data/samples/     # Sample data files
-├── scripts/          # Utility scripts
-├── config/           # Configuration files
-└── README.md         # This file
-```
-
-See [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md) for detailed structure.
-
 ## Requirements
 
 - Python 3.7+
@@ -45,7 +32,7 @@ See [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md) for detailed structure.
 ## Installation
 
 1. Install the required packages:
-   ```bash
+   ```
    pip install -r requirements.txt
    ```
 
@@ -56,12 +43,12 @@ See [REPOSITORY_STRUCTURE.md](REPOSITORY_STRUCTURE.md) for detailed structure.
 Launch the web-based GUI with drag-and-drop file uploads:
 
 ```bash
-streamlit run src/gui_app.py
+streamlit run gui_app.py
 ```
 
 Or use the provided script:
 ```bash
-./scripts/run_gui.sh
+./run_gui.sh
 ```
 
 Then open your browser to `http://localhost:8501`
@@ -73,14 +60,14 @@ Then open your browser to `http://localhost:8501`
 - Validation checks before generation
 - PDF preview and download
 
-See [docs/GUI_GUIDE.md](docs/GUI_GUIDE.md) for detailed instructions.
+See [GUI_GUIDE.md](GUI_GUIDE.md) for detailed instructions.
 
 ### Command Line Interface
 
 The generator can be used from the command line:
 
 ```bash
-python -m src.main \
+python main.py \
   --entity-name "Example Pty Ltd" \
   --current-year 2025 \
   --excel-file data.xlsx \
@@ -89,22 +76,27 @@ python -m src.main \
 
 ### Programmatic Usage
 
-The generator can be used programmatically:
+The generator can be used programmatically by importing the `AASBFinancialStatementGenerator` class:
 
 ```python
-import sys
-sys.path.insert(0, 'src')
-
 from aasb_financial_statement_generator import AASBFinancialStatementGenerator
-from excel_processor import ExcelProcessor
 
 # Initialize the generator
 generator = AASBFinancialStatementGenerator("Company Name", 2025)
 
-# Process Excel data
-processor = ExcelProcessor("data.xlsx")
-pl_data = processor.extract_pl_data()
-bs_data = processor.extract_bs_data()
+# Define your financial data
+pl_data = {
+    'revenue': 1000000,
+    # ... other P&L items
+}
+
+bs_data = {
+    'current_assets': {
+        'cash': 150000,
+        # ... other current assets
+    },
+    # ... other balance sheet items
+}
 
 # Generate the financial statements
 filename = generator.generate_financial_statements(
@@ -116,27 +108,6 @@ filename = generator.generate_financial_statements(
 )
 ```
 
-## AI Features
-
-The system includes optional AI-powered features for enhanced accuracy:
-
-- **Enhanced PDF Parsing**: Better extraction from complex PDF layouts
-- **AI Validation**: Deep analysis of balance sheet relationships and note disclosures
-- **Cross-Validation**: Ensures Excel and PDF data consistency
-- **Compliance Checking**: Validates AASB requirements automatically
-
-See [docs/AI_FEATURES.md](docs/AI_FEATURES.md) for detailed documentation.
-
-To enable AI features:
-```bash
-export OPENROUTER_API_KEY="your-api-key"
-```
-
-To disable AI features:
-```bash
-python -m src.main ... --no-ai
-```
-
 ## Compliance
 
 This generator ensures compliance with:
@@ -146,24 +117,26 @@ This generator ensures compliance with:
 
 The generated statements are suitable for non-reporting entities as defined under Australian accounting standards.
 
-## Validation Checks
+## AI Features
 
-The generator includes built-in validation for:
-- Balance sheet balancing (Assets = Liabilities + Equity)
-- Retained earnings roll-forward calculations
-- Director information consistency
-- Required note disclosures
-- AI-powered validation (if enabled)
+The system includes optional AI-powered features for enhanced accuracy:
 
-Any discrepancies will be flagged before final generation.
+- **Enhanced PDF Parsing**: Better extraction from complex PDF layouts
+- **AI Validation**: Deep analysis of balance sheet relationships and note disclosures
+- **Cross-Validation**: Ensures Excel and PDF data consistency
+- **Compliance Checking**: Validates AASB requirements automatically
 
-## Documentation
+See [AI_FEATURES.md](AI_FEATURES.md) for detailed documentation.
 
-- [Repository Structure](REPOSITORY_STRUCTURE.md) - Project organization
-- [GUI Guide](docs/GUI_GUIDE.md) - Complete GUI documentation
-- [Usage Guide](docs/USAGE_GUIDE.md) - Detailed usage instructions
-- [AI Features](docs/AI_FEATURES.md) - AI-powered features guide
-- [Railway Deployment](docs/RAILWAY_DEPLOYMENT.md) - Deployment guide
+To enable AI features:
+```bash
+export OPENROUTER_API_KEY="your-api-key"
+```
+
+To disable AI features:
+```bash
+python main.py ... --no-ai
+```
 
 ## Customization
 
@@ -172,7 +145,12 @@ To customize for your specific entity:
 2. Update director and compiler information
 3. Adjust note disclosures as required for your specific circumstances
 
-## License
+## Validation Checks
 
-This project is for internal use. All rights reserved.
+The generator includes built-in validation for:
+- Balance sheet balancing (Assets = Liabilities + Equity)
+- Retained earnings roll-forward calculations
+- Director information consistency
+- Required note disclosures
 
+Any discrepancies will be flagged before final generation.

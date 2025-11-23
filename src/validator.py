@@ -1,6 +1,7 @@
 """
 Comprehensive validation module for financial statement generation.
 Performs all mandatory checks before finalizing the PDF.
+Enhanced with more comprehensive validation rules and AI integration.
 """
 
 from typing import Dict, Any, Tuple, List, Optional
@@ -12,6 +13,7 @@ class FinancialStatementValidator:
     """
     Validates financial statements before final generation.
     Implements all mandatory checks per the AASB compliance requirements.
+    Enhanced with more comprehensive validation rules.
     """
     
     def __init__(self, entity_name: str, current_year: int, use_ai: bool = True):
@@ -80,6 +82,9 @@ class FinancialStatementValidator:
         self._validate_cash_accounts(bs_data)
         self._validate_related_party_loans(bs_data)
         self._validate_deferred_tax(pl_data, bs_data)
+        
+        # Enhanced financial ratio validations
+        self._validate_financial_ratios(bs_data, pl_data)
         
         # AI-powered validations
         if self.use_ai and self.ai_service:
@@ -259,6 +264,61 @@ class FinancialStatementValidator:
             )
             self.warnings.append(warning_msg)
     
+    def _validate_financial_ratios(self, bs_data: Dict[str, Any], pl_data: Dict[str, Any]) -> None:
+        """
+        Check: Validate key financial ratios for reasonableness.
+        
+        ⚠️ Warn if ratios are outside normal ranges
+        """
+        # Current Ratio (Current Assets / Current Liabilities)
+        current_assets = bs_data.get('total_current_assets', 0)
+        current_liabilities = bs_data.get('total_current_liabilities', 0)
+        
+        if current_liabilities > 0:
+            current_ratio = current_assets / current_liabilities
+            if current_ratio < 0.5:
+                warning_msg = (
+                    f"⚠️ CURRENT RATIO\n"
+                    f"   Current ratio is {current_ratio:.2f}, which is unusually low.\n"
+                    f"   Please verify current assets and liabilities."
+                )
+                self.warnings.append(warning_msg)
+            elif current_ratio > 5:
+                warning_msg = (
+                    f"⚠️ CURRENT RATIO\n"
+                    f"   Current ratio is {current_ratio:.2f}, which is unusually high.\n"
+                    f"   Please verify current assets and liabilities."
+                )
+                self.warnings.append(warning_msg)
+        
+        # Debt to Equity Ratio (Total Liabilities / Total Equity)
+        total_liabilities = bs_data.get('total_liabilities', 0)
+        total_equity = bs_data.get('total_equity', 0)
+        
+        if total_equity > 0:
+            debt_equity_ratio = total_liabilities / total_equity
+            if debt_equity_ratio > 5:
+                warning_msg = (
+                    f"⚠️ DEBT TO EQUITY RATIO\n"
+                    f"   Debt to equity ratio is {debt_equity_ratio:.2f}, which is unusually high.\n"
+                    f"   Please verify liabilities and equity."
+                )
+                self.warnings.append(warning_msg)
+        
+        # Profit Margin (Net Profit / Revenue)
+        net_profit = pl_data.get('net_profit_loss', 0)
+        revenue = pl_data.get('revenue', 0)
+        
+        if revenue > 0:
+            profit_margin = net_profit / revenue
+            if profit_margin < -2 or profit_margin > 2:
+                warning_msg = (
+                    f"⚠️ PROFIT MARGIN\n"
+                    f"   Profit margin is {profit_margin:.2%}, which is unusually high/low.\n"
+                    f"   Please verify revenue and profit figures."
+                )
+                self.warnings.append(warning_msg)
+    
     def print_validation_results(self) -> None:
         """Print all validation results."""
         if self.errors:
@@ -341,4 +401,3 @@ class FinancialStatementValidator:
         if self.errors:
             self.print_validation_results()
             sys.exit(1)
-

@@ -1,10 +1,13 @@
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, Tuple, Optional
+import re
+
 
 class ExcelProcessor:
     """
     Processes Excel files containing financial data for the AASB Financial Statement Generator.
+    Enhanced with improved data extraction and validation capabilities.
     """
     
     def __init__(self, excel_file_path: str):
@@ -341,15 +344,15 @@ class ExcelProcessor:
                     bs_data['equity'][key] = 0
             
             # Calculate totals
-            bs_data['total_current_assets'] = sum(bs_data['current_assets'].values())
-            bs_data['total_non_current_assets'] = sum(bs_data['non_current_assets'].values())
+            bs_data['total_current_assets'] = float(sum(bs_data['current_assets'].values()))
+            bs_data['total_non_current_assets'] = float(sum(bs_data['non_current_assets'].values()))
             bs_data['total_assets'] = bs_data['total_current_assets'] + bs_data['total_non_current_assets']
             
-            bs_data['total_current_liabilities'] = sum(bs_data['current_liabilities'].values())
-            bs_data['total_non_current_liabilities'] = sum(bs_data['non_current_liabilities'].values())
+            bs_data['total_current_liabilities'] = float(sum(bs_data['current_liabilities'].values()))
+            bs_data['total_non_current_liabilities'] = float(sum(bs_data['non_current_liabilities'].values()))
             bs_data['total_liabilities'] = bs_data['total_current_liabilities'] + bs_data['total_non_current_liabilities']
             
-            bs_data['total_equity'] = sum(bs_data['equity'].values())
+            bs_data['total_equity'] = float(sum(bs_data['equity'].values()))
             bs_data['total_liabilities_and_equity'] = bs_data['total_liabilities'] + bs_data['total_equity']
             
         except Exception as e:
@@ -370,7 +373,9 @@ class ExcelProcessor:
         """
         # Look for numeric values in the row (excluding the first column which is typically labels)
         # Start from the right to get current year value
-        for value in reversed(row[1:]):
+        # Use iloc to avoid FutureWarning about positional indexing
+        row_values = row.iloc[1:] if hasattr(row, 'iloc') else row[1:]
+        for value in reversed(row_values):
             if pd.notna(value) and isinstance(value, (int, float)):
                 return float(value)
             elif pd.notna(value) and isinstance(value, str):
@@ -427,17 +432,46 @@ class ExcelProcessor:
         else:
             difference = current_re - expected_re
             return False, f"Retained earnings mismatch. Expected: ${expected_re:,.2f}, Actual: ${current_re:,.2f}, Difference: ${difference:,.2f}"
-
-# Example usage
-if __name__ == "__main__":
-    # This is just for testing purposes
-    # In practice, you would use the class in your main application
-    try:
-        processor = ExcelProcessor("sample_entity_management_report.xlsx")
-        pl_data = processor.extract_pl_data()
-        bs_data = processor.extract_bs_data()
-        print("Successfully extracted data from Excel file")
-        print("P&L Data:", pl_data)
-        print("Balance Sheet Data:", bs_data)
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    
+    def analyze_data_quality(self) -> Dict[str, Any]:
+        """
+        Analyze the quality of the Excel data.
+        
+        Returns:
+            Dict[str, Any]: Data quality analysis results
+        """
+        analysis = {
+            'sheet_count': len(self.sheets),
+            'sheet_names': list(self.sheets.keys()),
+            'data_completeness': {},
+            'potential_issues': []
+        }
+        
+        # Check for required sheets
+        required_sheets = ['Consol PL', 'Consol BS']
+        found_sheets = [sheet for sheet in required_sheets if sheet in self.sheets]
+        analysis['required_sheets_found'] = found_sheets
+        analysis['missing_sheets'] = [sheet for sheet in required_sheets if sheet not in self.sheets]
+        
+        # Analyze data in each sheet
+        for sheet_name, sheet_data in self.sheets.items():
+            sheet_analysis = {
+                'rows': len(sheet_data),
+                'columns': len(sheet_data.columns),
+                'empty_cells': int(sheet_data.isnull().sum().sum()),
+                'data_density': 1 - (sheet_data.isnull().sum().sum() / (len(sheet_data) * len(sheet_data.columns)))
+            }
+            analysis['data_completeness'][sheet_name] = sheet_analysis
+            
+            # Check for common issues
+            if sheet_analysis['data_density'] < 0.3:
+                analysis['potential_issues'].append(f"Low data density in {sheet_name}")
+            
+            # Check for negative values in typically positive columns
+            numeric_columns = sheet_data.select_dtypes(include=[np.number]).columns
+            for col in numeric_columns:
+                if (sheet_data[col] < 0).sum() > 0:
+                    negative_count = (sheet_data[col] < 0).sum()
+                    analysis['potential_issues'].append(f"Found {negative_count} negative values in {sheet_name}.{col}")
+        
+        return analysis

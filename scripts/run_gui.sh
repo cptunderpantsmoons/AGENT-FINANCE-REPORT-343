@@ -11,5 +11,5 @@ if ! python3 -c "import streamlit" 2>/dev/null; then
 fi
 
 # Run Streamlit app
-streamlit run gui_app.py --server.port 8501 --server.address localhost
+streamlit run src/gui_app.py --server.port 8501 --server.address localhost
 
