@@ -7,7 +7,6 @@ Complete full-featured application with all functionality.
 import sys
 import os
 import tempfile
-from datetime import datetime
 
 # Add the src directory to the Python path so imports work
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -365,6 +364,7 @@ try:
                         
                         # Store generated file status
                         st.session_state.generated_file = True
+                        st.session_state.generation_time = "Completed"
                         
                         st.success(f"✅ Financial statements generated: {filename}")
                         
@@ -381,7 +381,7 @@ try:
                         st.write("### Generated File Details:")
                         st.write(f"- **File**: {filename}")
                         st.write(f"- **Size**: {os.path.getsize(filename) if os.path.exists(filename) else 'Unknown'} bytes")
-                        st.write(f"- **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                        st.write(f"- **Generated**: {st.session_state.get('generation_time', 'Unknown')}")
                         st.write(f"- **Entity**: {entity_name}")
                         st.write(f"- **Year**: {current_year}")
                 
