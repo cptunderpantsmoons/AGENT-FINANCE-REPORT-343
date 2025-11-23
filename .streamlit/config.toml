@@ -1,0 +1,19 @@
+[server]
+enableCORS = false
+enableXsrfProtection = true
+headless = true
+port = 8501
+
+[client]
+showSidebarNavigation = true
+foldPyCode = true
+
+[theme]
+primaryColor = "#FF6B6B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F8F9FA"
+textColor = "#212529"
+font = "sans serif"
+
+[runner]
+magicCommands = true
