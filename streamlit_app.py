@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-Streamlit App for AASB Financial Statement Generator
-Simple and robust version that avoids NameError issues.
+Ultra-simple Streamlit App - No NameError Version
+This version eliminates all potential NameError issues by using simple, direct code.
 """
 
 import sys
 import os
 import tempfile
 
-# Add the src directory to the Python path so imports work
+# Add the src directory to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-# Now we can import from our package
 try:
+    # Import required modules
+    import streamlit as st
+    import pandas as pd
+    import numpy as np
     from excel_processor import ExcelProcessor
     from pdf_parser import PDFParser
     from validator import FinancialStatementValidator
     from aasb_financial_statement_generator import AASBFinancialStatementGenerator
-    import streamlit as st
-    import pandas as pd
-    import numpy as np
     
     # Set page configuration
     st.set_page_config(
@@ -28,63 +28,64 @@ try:
         layout="wide"
     )
     
-    # Initialize session state variables
-    if 'excel_data' not in st.session_state:
-        st.session_state.excel_data = None
-    if 'pdf_data' not in st.session_state:
-        st.session_state.pdf_data = None
-    if 'validation_results' not in st.session_state:
-        st.session_state.validation_results = None
-    if 'generated_file' not in st.session_state:
-        st.session_state.generated_file = False
+    # Initialize session state with simple boolean flags
+    if 'has_excel' not in st.session_state:
+        st.session_state.has_excel = False
+    if 'has_pdf' not in st.session_state:
+        st.session_state.has_pdf = False
+    if 'has_validation' not in st.session_state:
+        st.session_state.has_validation = False
+    if 'has_generated' not in st.session_state:
+        st.session_state.has_generated = False
     
-    # Main title
+    # Main title and description
     st.title("📊 AASB Financial Statement Generator")
     st.write("Generate AASB-compliant financial statements for non-reporting entities")
     
-    # Navigation
+    # Simple navigation
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox(
-        "Choose a section:",
-        ["Home", "Upload Data", "Validation", "Preview", "Generate PDF"]
+        "Select Page:",
+        ["Home", "Upload Excel", "Upload PDF", "Validate", "Generate"]
     )
     
-    # Home Page
-    if page == "Home":
-        st.success("✅ App loaded successfully!")
-        st.write("""
-        ### 🚀 Quick Start
-        1. **Upload Data** - Upload your Excel file and prior year PDF
-        2. **Validate** - Check data quality and consistency  
-        3. **Preview** - Review extracted financial data
-        4. **Generate** - Create the final financial statements PDF
-        
-        ### 📁 Required Files
-        - **Excel File**: Entity Management Reports (Consol PL and Consol BS sheets)
-        - **PDF File**: Prior year Financial Statements PDF
-        """)
-        
-        # Status indicators
-        st.sidebar.subheader("Current Status")
-        st.sidebar.write(f"Excel Data: {'✅' if st.session_state.excel_data else '❌'}")
-        st.sidebar.write(f"PDF Data: {'✅' if st.session_state.pdf_data else '❌'}")
-        st.sidebar.write(f"Validation: {'✅' if st.session_state.validation_results else '❌'}")
-        st.sidebar.write(f"PDF Generated: {'✅' if st.session_state.generated_file else '❌'}")
+    # Status indicators - using simple boolean checks
+    st.sidebar.subheader("Status")
+    excel_status = "✅" if st.session_state.has_excel else "❌"
+    pdf_status = "✅" if st.session_state.has_pdf else "❌"
+    validation_status = "✅" if st.session_state.has_validation else "❌"
+    generation_status = "✅" if st.session_state.has_generated else "❌"
     
-    # Upload Data Page
-    elif page == "Upload Data":
-        st.subheader("📁 Upload Required Files")
+    st.sidebar.write(f"Excel Loaded: {excel_status}")
+    st.sidebar.write(f"PDF Loaded: {pdf_status}")
+    st.sidebar.write(f"Validation Done: {validation_status}")
+    st.sidebar.write(f"PDF Generated: {generation_status}")
+    
+    # Home page
+    if page == "Home":
+        st.subheader("Welcome!")
+        st.write("This app helps you generate AASB-compliant financial statements.")
+        st.write("Use the navigation to upload files and generate statements.")
         
-        # Excel Upload
-        st.write("### 📈 Excel File (Management Reports)")
-        excel_file = st.file_uploader("Upload Excel file with Consol PL and Consol BS sheets", 
-                                     type=['xlsx', 'xls'], key="excel")
+        # Show current status
+        st.write("### Current Status:")
+        st.write(f"- Excel Data: {'Loaded' if st.session_state.has_excel else 'Not Loaded'}")
+        st.write(f"- PDF Data: {'Loaded' if st.session_state.has_pdf else 'Not Loaded'}")
+        st.write(f"- Validation: {'Completed' if st.session_state.has_validation else 'Pending'}")
+        st.write(f"- Generation: {'Completed' if st.session_state.has_generated else 'Pending'}")
+    
+    # Upload Excel page
+    elif page == "Upload Excel":
+        st.subheader("Upload Excel File")
+        st.write("Upload your Excel file with Consol PL and Consol BS sheets.")
         
-        if excel_file is not None:
+        uploaded_file = st.file_uploader("Choose Excel file", type=['xlsx', 'xls'])
+        
+        if uploaded_file is not None:
             try:
                 # Save to temporary file
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
-                    tmp_file.write(excel_file.getvalue())
+                    tmp_file.write(uploaded_file.getvalue())
                     tmp_path = tmp_file.name
                 
                 # Process Excel
@@ -92,66 +93,79 @@ try:
                 pl_data = processor.extract_pl_data()
                 bs_data = processor.extract_bs_data()
                 
-                # Store in session state
-                st.session_state.excel_data = {
-                    'pl_data': pl_data,
-                    'bs_data': bs_data,
-                    'file_name': excel_file.name
-                }
+                # Store data in session state
+                st.session_state.excel_pl_data = pl_data
+                st.session_state.excel_bs_data = bs_data
+                st.session_state.excel_filename = uploaded_file.name
                 
-                st.success(f"✅ Excel data loaded from {excel_file.name}")
-                st.write("### Extracted P&L Data:")
+                # Mark as loaded
+                st.session_state.has_excel = True
+                
+                st.success(f"Excel loaded successfully from {uploaded_file.name}")
+                
+                # Show data
+                st.write("### P&L Data:")
                 st.json(pl_data)
+                st.write("### Balance Sheet Data:")
+                st.json(bs_data)
                 
                 # Clean up
                 os.unlink(tmp_path)
                 
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+            except Exception as error:
+                st.error(f"Error processing Excel file: {str(error)}")
+    
+    # Upload PDF page
+    elif page == "Upload PDF":
+        st.subheader("Upload PDF File")
+        st.write("Upload your prior year financial statements PDF.")
         
-        # PDF Upload
-        st.write("### 📄 Prior Year PDF")
-        pdf_file = st.file_uploader("Upload prior year Financial Statements PDF", 
-                                   type=['pdf'], key="pdf")
+        uploaded_file = st.file_uploader("Choose PDF file", type=['pdf'])
         
-        if pdf_file is not None:
+        if uploaded_file is not None:
             try:
                 # Save to temporary file
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                    tmp_file.write(pdf_file.getvalue())
+                    tmp_file.write(uploaded_file.getvalue())
                     tmp_path = tmp_file.name
                 
                 # Process PDF
-                pdf_parser = PDFParser(tmp_path)
-                pdf_data = {
-                    'pl_data': pdf_parser.extract_income_statement_data(),
-                    'bs_data': pdf_parser.extract_balance_sheet_data(),
-                    'file_name': pdf_file.name
-                }
+                parser = PDFParser(tmp_path)
+                pdf_pl_data = parser.extract_income_statement_data()
+                pdf_bs_data = parser.extract_balance_sheet_data()
                 
-                # Store in session state
-                st.session_state.pdf_data = pdf_data
+                # Store data in session state
+                st.session_state.pdf_pl_data = pdf_pl_data
+                st.session_state.pdf_bs_data = pdf_bs_data
+                st.session_state.pdf_filename = uploaded_file.name
                 
-                st.success(f"✅ PDF data loaded from {pdf_file.name}")
-                st.write("### Extracted PDF P&L Data:")
-                st.json(pdf_data['pl_data'])
+                # Mark as loaded
+                st.session_state.has_pdf = True
+                
+                st.success(f"PDF loaded successfully from {uploaded_file.name}")
+                
+                # Show data
+                st.write("### PDF P&L Data:")
+                st.json(pdf_pl_data)
                 
                 # Clean up
                 os.unlink(tmp_path)
                 
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+            except Exception as error:
+                st.error(f"Error processing PDF file: {str(error)}")
     
-    # Validation Page
-    elif page == "Validation":
-        st.subheader("✅ Data Validation")
+    # Validate page
+    elif page == "Validate":
+        st.subheader("Data Validation")
         
-        if not st.session_state.excel_data or not st.session_state.pdf_data:
-            st.warning("⚠️ Please upload both Excel and PDF files first.")
+        if not st.session_state.has_excel:
+            st.warning("Please upload Excel file first.")
+        elif not st.session_state.has_pdf:
+            st.warning("Please upload PDF file first.")
         else:
-            st.success("✅ Data loaded. Ready for validation.")
+            st.success("Both files loaded. Ready for validation.")
             
-            # Entity info
+            # Get entity information
             entity_name = st.text_input("Entity Name", value="Example Pty Ltd")
             current_year = st.number_input("Current Year", min_value=2020, max_value=2030, value=2025)
             
@@ -162,10 +176,10 @@ try:
                     
                     # Run validation
                     is_valid, errors, warnings, queries = validator.validate_all(
-                        bs_data=st.session_state.excel_data['bs_data'],
-                        pl_data=st.session_state.excel_data['pl_data'],
-                        prior_year_data=st.session_state.pdf_data['bs_data'],
-                        prior_re=0,  # Simplified for testing
+                        bs_data=st.session_state.excel_bs_data,
+                        pl_data=st.session_state.excel_pl_data,
+                        prior_year_data=st.session_state.pdf_bs_data,
+                        prior_re=0,
                         directors=[{'name': 'Test', 'title': 'Director'}],
                         compiler={'name': 'Test', 'title': 'CFO'},
                         tax_consolidation_entity="",
@@ -174,57 +188,44 @@ try:
                     )
                     
                     # Store results
-                    st.session_state.validation_results = {
-                        'is_valid': is_valid,
-                        'errors': errors,
-                        'warnings': warnings
-                    }
+                    st.session_state.validation_errors = errors
+                    st.session_state.validation_warnings = warnings
+                    st.session_state.validation_passed = is_valid
+                    
+                    # Mark as validated
+                    st.session_state.has_validation = True
                     
                     # Show results
                     if errors:
-                        st.error("❌ Errors found:")
+                        st.error("Validation Errors:")
                         for error in errors:
                             st.write(f"- {error}")
                     
                     if warnings:
-                        st.warning("⚠️ Warnings:")
+                        st.warning("Validation Warnings:")
                         for warning in warnings:
                             st.write(f"- {warning}")
                     
-                    if not errors and not warnings:
-                        st.success("✅ All validations passed!")
+                    if is_valid and not warnings:
+                        st.success("All validations passed!")
                 
-                except Exception as e:
-                    st.error(f"❌ Validation error: {str(e)}")
+                except Exception as error:
+                    st.error(f"Validation error: {str(error)}")
     
-    # Preview Page
-    elif page == "Preview":
-        st.subheader("📊 Data Preview")
+    # Generate page
+    elif page == "Generate":
+        st.subheader("Generate Financial Statements")
         
-        if st.session_state.excel_data:
-            st.write("### 📈 Excel P&L Data:")
-            st.json(st.session_state.excel_data['pl_data'])
-            st.write("### 📈 Excel Balance Sheet Data:")
-            st.json(st.session_state.excel_data['bs_data'])
+        if not st.session_state.has_excel:
+            st.warning("Please upload Excel file first.")
+        elif not st.session_state.has_pdf:
+            st.warning("Please upload PDF file first.")
+        elif not st.session_state.has_validation:
+            st.warning("Please run validation first.")
         else:
-            st.warning("⚠️ No Excel data loaded")
-        
-        if st.session_state.pdf_data:
-            st.write("### 📄 PDF P&L Data:")
-            st.json(st.session_state.pdf_data['pl_data'])
-        else:
-            st.warning("⚠️ No PDF data loaded")
-    
-    # Generate PDF Page
-    elif page == "Generate PDF":
-        st.subheader("📤 Generate Financial Statements")
-        
-        if not st.session_state.excel_data or not st.session_state.validation_results:
-            st.warning("⚠️ Please complete data upload and validation first.")
-        else:
-            st.success("✅ Ready to generate statements!")
+            st.success("Ready to generate statements!")
             
-            # Entity info
+            # Entity information
             entity_name = st.text_input("Entity Name", value="Example Pty Ltd")
             current_year = st.number_input("Current Year", min_value=2020, max_value=2030, value=2025)
             
@@ -235,42 +236,41 @@ try:
                         generator = AASBFinancialStatementGenerator(
                             entity_name,
                             current_year,
-                            st.session_state.pdf_data['bs_data']
+                            st.session_state.pdf_bs_data
                         )
                         
                         # Generate statements
                         filename = generator.generate_financial_statements(
-                            st.session_state.excel_data['pl_data'],
-                            st.session_state.excel_data['bs_data'],
+                            st.session_state.excel_pl_data,
+                            st.session_state.excel_bs_data,
                             {},
                             [{'name': 'Test Director', 'title': 'Director'}],
                             {'name': 'Test Compiler', 'title': 'CFO'}
                         )
                         
-                        # Mark as generated
-                        st.session_state.generated_file = True
+                        # Store filename
+                        st.session_state.generated_filename = filename
                         
-                        st.success(f"✅ PDF generated: {filename}")
+                        # Mark as generated
+                        st.session_state.has_generated = True
+                        
+                        st.success(f"PDF generated: {filename}")
                         
                         # Download button
                         with open(filename, "rb") as f:
                             st.download_button(
-                                label="📥 Download PDF",
+                                label="Download PDF",
                                 data=f.read(),
                                 file_name=os.path.basename(filename),
                                 mime="application/pdf"
                             )
                 
-                except Exception as e:
-                    st.error(f"❌ Generation error: {str(e)}")
+                except Exception as error:
+                    st.error(f"Generation error: {str(error)}")
                     import traceback
                     st.code(traceback.format_exc())
-    
-except ImportError as e:
-    st.error(f"❌ Import Error: {str(e)}")
-    st.write("Please check dependencies and package structure.")
-    
-except Exception as e:
-    st.error(f"❌ Unexpected Error: {str(e)}")
+
+except Exception as main_error:
+    st.error(f"Application Error: {str(main_error)}")
     import traceback
     st.code(traceback.format_exc())
